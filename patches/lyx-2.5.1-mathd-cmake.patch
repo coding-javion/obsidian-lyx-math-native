@@ -1,0 +1,79 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@
+ handle_source_option("CXX" "${TOP_SRC_DIR}/src/LyX.cpp" -Wno-error -Wno-invalid-noreturn -Wno-missing-noreturn -Wno-unreachable-code-return)
+ handle_source_option("CXX" ${TOP_SRC_DIR}/src/TextMetrics.cpp -Wno-implicit-int-float-conversion)
+ handle_source_option("CXX" ${TOP_SRC_DIR}/src/CursorSlice.cpp -Wno-null-dereference)
+ 
++foreach(_base BiblioInfo Buffer BufferEncodings BufferList BufferParams BufferView
++	Changes Compare Converter Counters Cursor CursorSlice CutAndPaste
++	DocIterator Font FontInfo FontList Format InsetIterator
++	InsetList Language LaTeX LaTeXFeatures Layout LayoutFile LayoutModuleList LyX LyXRC
++	MetricsInfo PDFOptions ParIterator Paragraph ParagraphMetrics ParagraphParameters
++	Row RowPainter Statistics TexRow Text TextClass TextMetrics TocBackend TocBuilder Trans
++	Undo VSpace factory lyxfind output_docbook output_latex output_plaintext output_xhtml
++	xml) 
++  handle_source_option("CXX" ${TOP_SRC_DIR}/src/${_base}.cpp -Wno-shadow)
++endforeach()
+ if (${LYX_DEBUG_SANITIZE} MATCHES "ADDRESS")
+   foreach(_base BiblioInfo Encoding LaTeX LaTeXFeatures LayoutFile Text VCBackend lyxfind Preamble)
+     handle_source_option("CXX" ${TOP_SRC_DIR}/src/${_base}.cpp -Wno-maybe-uninitialized)
+   endforeach()
+ endif()
+@@
+ lyx_find_info_files(LyXCMakeFiles ${TOP_SCRIPT_PATH}/*)
+ lyx_find_info_files(LyXUiFiles ${TOP_SRC_DIR}/lib/ui/*)
+ 
++set(lyx_mathd_sources ${lyx_sources})
++list(REMOVE_ITEM lyx_mathd_sources
++	${TOP_SRC_DIR}/src/main.cpp
++	${TOP_SRC_DIR}/src/HunspellChecker.cpp)
++
++add_library(lyxcore_for_mathd OBJECT
++	${lyx_mathd_sources}
++	${lyx_headers}
++)
++
++add_dependencies(lyxcore_for_mathd lyx_version)
++
++set_target_properties(lyxcore_for_mathd PROPERTIES
++  QT_NO_UNICODE_DEFINES TRUE
++	FOLDER "applications/LyX"
++	INTERPROCEDURAL_OPTIMIZATION ${LYX_IPO_SUPPORTED})
++
++qt_use_modules(lyxcore_for_mathd Core Gui ${QtCore5CompatModule})
++
+ add_executable(${_lyx}
+ 	${WIN32_CONSOLE}
+ 	${LYX_BUILD_BUNDLE}
+diff --git a/src/convert/CMakeLists.txt b/src/convert/CMakeLists.txt
+new file mode 100644
+--- /dev/null
++++ b/src/convert/CMakeLists.txt
+@@
++# This file is part of LyX, the document processor.
++# Licence details can be found in the file COPYING.
++
++project(${_convert})
++
++include_directories(BEFORE
++	"${TOP_SRC_DIR}/src/convert")
++
++add_executable(${_convert}
++	"${TOP_SRC_DIR}/src/convert/lyxconvert.cpp")
++
++target_link_libraries(${_convert}
++	${QT_QTCORE_LIBRARY}
++	${QT_QTGUI_LIBRARY}
++	${QT_QTWIDGETS_LIBRARY}
++	${ICONV_LIBRARY}
++	${ZLIB_LIBRARY})
++
++qt_use_modules(${_convert} Core Gui Widgets)
++
++if(APPLE)
++	target_link_libraries(${_convert} "-framework AppKit")
++endif()
++
++install(TARGETS ${_convert} DESTINATION ${LYX_UTILITIES_INSTALL_PATH})

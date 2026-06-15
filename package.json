@@ -1,0 +1,31 @@
+{
+  "name": "obsidian-lyx-math-native",
+  "version": "0.1.2",
+  "description": "Native sidecar based LyX math editing for Obsidian.",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "lyx:configure": "node scripts/configure-lyx-build.js",
+    "lyx:build-core": "node scripts/build-lyx-core.js",
+    "native:configure": "cmake -S native/lyx-mathd -B native/lyx-mathd/build",
+    "native:configure:lyx": "node scripts/configure-native-lyx.js",
+    "native:build": "cmake --build native/lyx-mathd/build",
+    "native:package": "node scripts/package-native.js",
+    "native:package:macos-app": "node scripts/package-macos-app.js",
+    "support:package": "node scripts/package-support.js",
+    "release:zip": "node scripts/create-release-zip.js",
+    "release:source": "node scripts/create-source-tarball.js",
+    "release:all": "npm run release:zip && npm run release:source",
+    "release:prepare": "npm run native:package && npm run support:package && npm test",
+    "native:test": "node tests/native_protocol.test.mjs",
+    "test": "npm run native:test"
+  },
+  "keywords": [
+    "obsidian",
+    "math",
+    "lyx",
+    "native"
+  ],
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {}
+}

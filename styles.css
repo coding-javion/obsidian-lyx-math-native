@@ -1,0 +1,235 @@
+.modal.lyx-native-modal-shell {
+  box-sizing: border-box !important;
+  width: min(820px, 94vw) !important;
+  max-width: 94vw !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
+.lyx-native-modal {
+  box-sizing: border-box !important;
+  width: min(760px, 92vw) !important;
+  max-width: 92vw !important;
+  min-width: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  overflow-x: hidden !important;
+}
+
+.lyx-native-modal h2 {
+  margin: 0 0 0.75em;
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+}
+
+.lyx-native-status {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.lyx-native-preview {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.lyx-native-editor {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 112px;
+  margin: 12px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  cursor: text;
+  outline: none;
+  overflow-x: hidden;
+}
+
+.lyx-native-editor:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+}
+
+.lyx-native-editor .lyx-native-preview-content {
+  display: inline-block !important;
+  width: auto !important;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.lyx-native-painter {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.lyx-native-painter svg {
+  display: block;
+  max-width: 100% !important;
+  height: auto;
+  color: var(--text-normal);
+}
+
+.lyx-native-painter-image {
+  display: block;
+  max-width: 100% !important;
+  height: auto;
+  vertical-align: middle;
+}
+
+body.theme-dark .lyx-native-painter-image {
+  filter: invert(1);
+}
+
+.lyx-native-editor math {
+  color: var(--text-normal);
+  font-size: 13px !important;
+  vertical-align: middle;
+}
+
+.lyx-native-caret {
+  display: inline-block;
+  width: 1px;
+  height: 1.8em;
+  margin-left: 2px;
+  vertical-align: middle;
+  background: var(--text-normal);
+  animation: lyx-native-caret-blink 1s step-end infinite;
+}
+
+@keyframes lyx-native-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.lyx-native-preview-content {
+  min-height: 1.5em;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.lyx-native-render,
+.lyx-native-render span {
+  display: inline;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.lyx-native-preview code,
+.lyx-native-editor code,
+.lyx-native-preview-content code {
+  display: block;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.lyx-native-preview math {
+  color: var(--text-normal);
+  font-size: 13px !important;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.lyx-native-source {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 120px;
+  resize: vertical;
+  font-family: var(--font-monospace);
+  font-size: 13px !important;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.lyx-native-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 12px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.lyx-native-structure-controls {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 360px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.lyx-native-structure-select {
+  flex: 1 1 150px;
+  min-width: 120px;
+  max-width: 100%;
+}
+
+.lyx-native-structure-size {
+  box-sizing: border-box;
+  width: 56px;
+  min-width: 52px;
+}
+
+.lyx-native-structure-controls button,
+.lyx-native-controls > button {
+  flex: 0 0 auto;
+}
