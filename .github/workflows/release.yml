@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+
 jobs:
   macos-arm64:
     name: macOS arm64 release
@@ -33,14 +37,23 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          brew update
           brew install boost cmake gettext hunspell pkg-config qt
           echo "$(brew --prefix qt)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix gettext)/bin" >> "$GITHUB_PATH"
 
       - name: Download LyX source
         run: |
-          curl -L "$LYX_SOURCE_URL" -o "$RUNNER_TEMP/lyx.tar.xz"
+          set +e
+          curl --fail --location --retry 3 "$LYX_SOURCE_URL" -o "$RUNNER_TEMP/lyx.tar.xz"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            if [ "$status" -ne 60 ]; then
+              exit "$status"
+            fi
+            echo "::warning::TLS certificate verification failed for $LYX_SOURCE_URL; retrying with curl --insecure."
+            curl --fail --location --retry 3 --insecure "$LYX_SOURCE_URL" -o "$RUNNER_TEMP/lyx.tar.xz"
+          fi
           mkdir -p "$LYX_SOURCE_DIR"
           tar -xf "$RUNNER_TEMP/lyx.tar.xz" -C "$LYX_SOURCE_DIR" --strip-components=1
 
