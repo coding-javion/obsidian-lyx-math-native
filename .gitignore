@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+dist/
+native/lyx-mathd/build/
+*.log
+
+# Keep packaged runtime artifacts out of ordinary source commits unless a release
+# branch intentionally tracks them.
+bin/
+support/
