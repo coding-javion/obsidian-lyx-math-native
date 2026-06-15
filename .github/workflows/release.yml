@@ -16,12 +16,15 @@ jobs:
     env:
       LYX_VERSION: "2.5.1"
       LYX_SOURCE_URL: "https://ftp.lyx.org/pub/lyx/stable/2.5.x/lyx-2.5.1.tar.xz"
-      LYX_SOURCE_DIR: "${{ runner.temp }}/lyx-2.5.1"
-      LYX_BUILD_DIR: "${{ runner.temp }}/lyx-build"
       LYX_BUILD_JOBS: "4"
     steps:
       - name: Check out plugin source
         uses: actions/checkout@v4
+
+      - name: Set build paths
+        run: |
+          echo "LYX_SOURCE_DIR=$RUNNER_TEMP/lyx-2.5.1" >> "$GITHUB_ENV"
+          echo "LYX_BUILD_DIR=$RUNNER_TEMP/lyx-build" >> "$GITHUB_ENV"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
