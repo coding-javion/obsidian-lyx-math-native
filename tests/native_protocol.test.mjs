@@ -29,6 +29,8 @@ assert.match(stylesheet, /\.lyx-native-editor math\s*\{[^}]*font-size:\s*13px !i
 assert.match(stylesheet, /\.lyx-native-preview math\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-source\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(pluginMain, /function nativeCssPixels/);
+assert.match(pluginMain, /const scheduleDraw = \(\) =>/);
+assert.doesNotMatch(pluginMain, /await draw\(\);\s*status\.textContent = updated\.lyxParseError \|\| sidecarStatusMessage/);
 assert.match(pluginMain, /nativeCssPixels\(rendered, "width", "pixelWidth"\)/);
 assert.match(pluginMain, /nativeCssPixels\(rendered, "height", "pixelHeight"\)/);
 assert.doesNotMatch(pluginMain, /setProperty\("width", `\$\{rendered\.width\}px`, "important"\)/);

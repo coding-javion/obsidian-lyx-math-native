@@ -300,6 +300,7 @@ class NativeMathModal extends Modal {
     status.className = "lyx-native-status";
     applyWrappingBox(status);
     status.textContent = sidecarStatusMessage(this.baseDir);
+    const healthyStatusText = status.textContent;
     contentEl.appendChild(status);
 
     const editorSurface = document.createElement("div");
@@ -390,6 +391,47 @@ class NativeMathModal extends Modal {
       modeButton.textContent = this.display ? "Display $$" : "Inline $";
     };
 
+    let drawScheduled = false;
+    let drawRunning = false;
+    let drawAgain = false;
+    const scheduleFrame = callback => {
+      if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(callback);
+      } else {
+        setTimeout(callback, 16);
+      }
+    };
+    const runScheduledDraw = async () => {
+      drawScheduled = false;
+      if (drawRunning) {
+        drawAgain = true;
+        return;
+      }
+      drawRunning = true;
+      try {
+        await draw();
+      } catch (error) {
+        status.textContent = `Cannot render formula: ${error.message}`;
+      } finally {
+        drawRunning = false;
+        if (drawAgain) {
+          drawAgain = false;
+          scheduleDraw();
+        }
+      }
+    };
+    const scheduleDraw = () => {
+      if (drawRunning) {
+        drawAgain = true;
+        return;
+      }
+      if (drawScheduled) return;
+      drawScheduled = true;
+      scheduleFrame(() => {
+        runScheduledDraw();
+      });
+    };
+
     let updateQueue = Promise.resolve();
     const updateFromNative = action => {
       updateQueue = updateQueue
@@ -399,8 +441,8 @@ class NativeMathModal extends Modal {
           const updated = await this.client.dispatch(this.session, action);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          await draw();
-          status.textContent = updated.lyxParseError || sidecarStatusMessage(this.baseDir);
+          scheduleDraw();
+          status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
           status.textContent = `Cannot update formula: ${error.message}`;
@@ -415,8 +457,8 @@ class NativeMathModal extends Modal {
           const updated = await this.client.setSession(this.session, currentSource, this.display);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          await draw();
-          status.textContent = updated.lyxParseError || sidecarStatusMessage(this.baseDir);
+          scheduleDraw();
+          status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
           status.textContent = `Cannot update formula: ${error.message}`;
