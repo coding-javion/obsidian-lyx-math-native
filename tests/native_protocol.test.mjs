@@ -35,6 +35,7 @@ assert.doesNotMatch(pluginMain, /setProperty\("width", `\$\{rendered\.width\}px`
 assert.doesNotMatch(pluginMain, /setProperty\("height", `\$\{rendered\.height\}px`, "important"\)/);
 assert.match(sidecarMain, /font-size=\\"12\\"/);
 assert.doesNotMatch(sidecarMain, /font-size=\\"16\\"/);
+assert.match(sidecarMain, /font\.setStyle\(s\.display \? lyx::DISPLAY_STYLE : lyx::TEXT_STYLE\)/);
 
 const binaryPath = resolveSidecarPath(root);
 const status = detectSidecar(root);
@@ -61,6 +62,7 @@ try {
   assert.equal(inlineFrac.hull, "simple");
   const inlinePainter = await client.renderPainter(created.session);
   assert.equal(inlinePainter.available, true, inlinePainter.error || "inline LyX painter render unavailable");
+  assert.equal(inlinePainter.display, false);
   assert.equal(inlinePainter.nativeQtPainter, true);
 
   const updated = await client.setSession(created.session, "\\frac{x}{y}", true);
@@ -75,6 +77,7 @@ try {
 
   const painterRendered = await client.renderPainter(created.session);
   assert.equal(painterRendered.available, true, painterRendered.error || "LyX painter render unavailable");
+  assert.equal(painterRendered.display, true);
   assert.equal(painterRendered.lyxPainter, true);
   assert.equal(painterRendered.nativeQtPainter, true);
   assert.ok(painterRendered.width > 0);
@@ -85,7 +88,6 @@ try {
   assert.ok(painterRendered.ascent >= 0);
   assert.ok(Array.isArray(painterRendered.ops));
   assert.match(painterRendered.png, /^data:image\/png;base64,/);
-  assert.ok(painterRendered.height > inlinePainter.height, "display hull should use LyX display style");
 
   const alpha = await client.setSession(created.session, "\\alpha", false);
   assert.equal(alpha.lyxParsed, true);

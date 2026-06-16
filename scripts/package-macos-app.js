@@ -32,6 +32,49 @@ function run(command, args) {
   }
 }
 
+function commandOutput(command, args) {
+  const result = childProcess.spawnSync(command, args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (result.error || result.status !== 0) return null;
+  return result.stdout.trim();
+}
+
+function qtPluginDir() {
+  if (process.env.QT_PLUGIN_DIR) return process.env.QT_PLUGIN_DIR;
+  return commandOutput("qmake", ["-query", "QT_INSTALL_PLUGINS"])
+    || commandOutput("qtpaths", ["--query", "QT_INSTALL_PLUGINS"]);
+}
+
+function addPluginFrameworkRpath(pluginPath) {
+  const rpath = "@loader_path/../../Frameworks";
+  const current = commandOutput("otool", ["-l", pluginPath]) || "";
+  if (current.includes(`path ${rpath} `)) return;
+
+  const result = childProcess.spawnSync("install_name_tool", ["-add_rpath", rpath, pluginPath], {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (result.status !== 0 && !/would duplicate path/.test(result.stderr || "")) {
+    throw new Error(`install_name_tool -add_rpath ${rpath} ${pluginPath} failed with status ${result.status}`);
+  }
+}
+
+function copyQtPlugin(pluginsDir, relativePath) {
+  const sourcePlugin = path.join(pluginsDir, relativePath);
+  if (!fs.existsSync(sourcePlugin)) {
+    throw new Error(`Missing Qt plugin: ${sourcePlugin}`);
+  }
+  const targetPlugin = path.join(appDir, "Contents", "PlugIns", relativePath);
+  fs.mkdirSync(path.dirname(targetPlugin), { recursive: true });
+  fs.copyFileSync(sourcePlugin, targetPlugin);
+  fs.chmodSync(targetPlugin, 0o755);
+  addPluginFrameworkRpath(targetPlugin);
+}
+
 if (!fs.existsSync(source)) {
   console.error(`Missing native helper: ${source}`);
   console.error("Run npm run native:build first.");
@@ -65,7 +108,18 @@ fs.writeFileSync(infoPlist, `<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 `);
 
-run(macdeployqt, [appDir, "-always-overwrite"]);
+run(macdeployqt, [appDir, "-always-overwrite", "-no-plugins", "-no-codesign"]);
+
+const pluginsDir = qtPluginDir();
+if (!pluginsDir) {
+  throw new Error("Cannot find Qt plugin directory. Set QT_PLUGIN_DIR or put qmake/qtpaths on PATH.");
+}
+copyQtPlugin(pluginsDir, path.join("platforms", "libqcocoa.dylib"));
+copyQtPlugin(pluginsDir, path.join("styles", "libqmacstyle.dylib"));
+
+const resourcesDir = path.join(appDir, "Contents", "Resources");
+fs.mkdirSync(resourcesDir, { recursive: true });
+fs.writeFileSync(path.join(resourcesDir, "qt.conf"), "[Paths]\nPlugins = PlugIns\n");
 
 if (process.env.CODESIGN_IDENTITY) {
   run("codesign", ["--force", "--deep", "--options", "runtime", "--sign", process.env.CODESIGN_IDENTITY, appDir]);
