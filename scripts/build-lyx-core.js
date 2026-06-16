@@ -13,6 +13,7 @@ const result = childProcess.spawnSync("cmake", [
   "frontends",
   "graphics",
   "frontend_qt",
+  "mytheslibstatic",
   "lyxcore_for_mathd",
   "-j",
   process.env.LYX_BUILD_JOBS || "8"
