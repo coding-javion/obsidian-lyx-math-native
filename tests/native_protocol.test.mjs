@@ -29,12 +29,16 @@ assert.match(stylesheet, /\.lyx-native-editor\s*\{[^}]*font-size:\s*13px !import
 assert.match(stylesheet, /\.lyx-native-editor math\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-preview math\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-source\s*\{[^}]*font-size:\s*13px !important;/);
+assert.match(stylesheet, /\.lyx-native-pending-macro\s*\{/);
 assert.match(pluginMain, /function nativeCssPixels/);
 assert.match(pluginMain, /const scheduleDraw = \(renderScale = liveRenderScale\) =>/);
 assert.match(pluginMain, /const liveRenderScale = 2;/);
 assert.match(pluginMain, /const fullRenderScale = 4;/);
 assert.match(pluginMain, /renderPainter\(this\.session, \{ renderScale \}\)/);
 assert.match(pluginMain, /scheduleHighQualityDraw/);
+assert.match(pluginMain, /shouldDeferMacroRender\(action, updated\)/);
+assert.match(pluginMain, /renderPendingMacroPreview\(editorSurface, pendingMacroText\)/);
+assert.match(pluginMain, /showPendingMacro\(updated\.macroName\)/);
 assert.doesNotMatch(pluginMain, /await draw\(\);\s*status\.textContent = updated\.lyxParseError \|\| sidecarStatusMessage/);
 assert.match(nativeClientSource, /renderPainter\(session, options = \{\}\)/);
 assert.match(nativeClientSource, /\{ session, \.\.\.options \}/);
@@ -46,6 +50,23 @@ assert.match(sidecarMain, /font-size=\\"12\\"/);
 assert.doesNotMatch(sidecarMain, /font-size=\\"16\\"/);
 assert.match(sidecarMain, /font\.setStyle\(s\.display \? lyx::DISPLAY_STYLE : lyx::TEXT_STYLE\)/);
 assert.match(sidecarMain, /std::clamp\(integer\(p, "renderScale", 4\), 1, 4\)/);
+
+assert.equal(pluginEntry._private.shouldDeferMacroRender(
+  { type: "insertText", text: "a" },
+  { macroMode: true, macroName: "\\alpha" }
+), true);
+assert.equal(pluginEntry._private.shouldDeferMacroRender(
+  { type: "insertText", text: "\\" },
+  { macroMode: true, macroName: "\\" }
+), true);
+assert.equal(pluginEntry._private.shouldDeferMacroRender(
+  { type: "insertText", text: " " },
+  { macroMode: false, macroName: "" }
+), false);
+assert.equal(pluginEntry._private.shouldDeferMacroRender(
+  { type: "moveForward" },
+  { macroMode: true, macroName: "\\alpha" }
+), false);
 
 const binaryPath = resolveSidecarPath(root);
 const status = detectSidecar(root);

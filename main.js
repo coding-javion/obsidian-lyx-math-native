@@ -388,6 +388,7 @@ class NativeMathModal extends Modal {
     const idleRenderDelayMs = 180;
     let drawCancelled = false;
     let highQualityTimer = null;
+    let pendingMacroText = "";
     const clearHighQualityDraw = () => {
       if (!highQualityTimer) return;
       clearTimeout(highQualityTimer);
@@ -404,7 +405,11 @@ class NativeMathModal extends Modal {
       if (drawCancelled) return;
       if (typeof rendered.display === "boolean") this.display = rendered.display;
       renderNativePreview(editorSurface, rendered, currentSource);
-      if (!hasNativeCursor(rendered)) appendEditorCaret(editorSurface);
+      if (pendingMacroText) {
+        renderPendingMacroPreview(editorSurface, pendingMacroText);
+      } else if (!hasNativeCursor(rendered)) {
+        appendEditorCaret(editorSurface);
+      }
       modeButton.textContent = this.display ? "Display $$" : "Inline $";
     };
 
@@ -467,6 +472,10 @@ class NativeMathModal extends Modal {
         runScheduledDraw();
       });
     };
+    const showPendingMacro = text => {
+      pendingMacroText = text || "";
+      renderPendingMacroPreview(editorSurface, pendingMacroText);
+    };
 
     let updateQueue = Promise.resolve();
     const updateFromNative = action => {
@@ -477,7 +486,13 @@ class NativeMathModal extends Modal {
           const updated = await this.client.dispatch(this.session, action);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          scheduleDraw(liveRenderScale);
+          if (shouldDeferMacroRender(action, updated)) {
+            clearHighQualityDraw();
+            showPendingMacro(updated.macroName);
+          } else {
+            showPendingMacro("");
+            scheduleDraw(liveRenderScale);
+          }
           status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
@@ -490,6 +505,7 @@ class NativeMathModal extends Modal {
         .catch(() => {})
         .then(async () => {
           if (!this.client || !this.session) return;
+          showPendingMacro("");
           const updated = await this.client.setSession(this.session, currentSource, this.display);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
@@ -925,6 +941,32 @@ function appendEditorCaret(editorSurface) {
   editorSurface.appendChild(caret);
 }
 
+function isAlphabeticPendingMacro(updated) {
+  return Boolean(updated
+    && updated.macroMode === true
+    && typeof updated.macroName === "string"
+    && /^\\[A-Za-z]*$/.test(updated.macroName));
+}
+
+function shouldDeferMacroRender(action, updated) {
+  return Boolean(action
+    && (action.type === "insertText" || action.type === "backspace" || action.type === "delete")
+    && isAlphabeticPendingMacro(updated));
+}
+
+function renderPendingMacroPreview(editorSurface, macroName) {
+  if (!editorSurface || typeof editorSurface.querySelectorAll !== "function") return;
+  for (const node of editorSurface.querySelectorAll(".lyx-native-pending-macro")) {
+    node.remove();
+  }
+  if (!macroName) return;
+  const pending = document.createElement("span");
+  pending.className = "lyx-native-pending-macro";
+  pending.textContent = macroName;
+  pending.setAttribute("aria-label", `Pending LyX command ${macroName}`);
+  editorSurface.appendChild(pending);
+}
+
 function hasNativeCursor(rendered) {
   return Boolean(rendered && Array.isArray(rendered.ops)
     && rendered.ops.some(op => op && op.type === "cursor"));
@@ -940,7 +982,9 @@ module.exports._private = {
   applyWrappingBox,
   appendEditorCaret,
   hasNativeCursor,
+  shouldDeferMacroRender,
   getPluginBaseDir,
   renderNativePreview,
+  renderPendingMacroPreview,
   sidecarStatusMessage
 };

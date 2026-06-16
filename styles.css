@@ -137,6 +137,20 @@ body.theme-dark .lyx-native-painter-image {
   }
 }
 
+.lyx-native-pending-macro {
+  display: inline-block;
+  max-width: 100%;
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-all;
+  vertical-align: middle;
+}
+
 .lyx-native-preview-content {
   min-height: 1.5em;
   width: 100%;
