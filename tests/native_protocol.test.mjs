@@ -20,6 +20,7 @@ assert.equal(manifest.version, packageJson.version);
 
 const stylesheet = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const pluginMain = fs.readFileSync(path.join(root, "main.js"), "utf8");
+const nativeClientSource = fs.readFileSync(path.join(root, "src", "native_client.js"), "utf8");
 const sidecarMain = fs.readFileSync(path.join(root, "native", "lyx-mathd", "src", "main.cpp"), "utf8");
 assert.doesNotMatch(stylesheet, /font-size:\s*1\.(?:35|8)em/);
 assert.match(stylesheet, /\.lyx-native-modal\s*\{[^}]*font-size:\s*13px !important;/);
@@ -29,8 +30,14 @@ assert.match(stylesheet, /\.lyx-native-editor math\s*\{[^}]*font-size:\s*13px !i
 assert.match(stylesheet, /\.lyx-native-preview math\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-source\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(pluginMain, /function nativeCssPixels/);
-assert.match(pluginMain, /const scheduleDraw = \(\) =>/);
+assert.match(pluginMain, /const scheduleDraw = \(renderScale = liveRenderScale\) =>/);
+assert.match(pluginMain, /const liveRenderScale = 2;/);
+assert.match(pluginMain, /const fullRenderScale = 4;/);
+assert.match(pluginMain, /renderPainter\(this\.session, \{ renderScale \}\)/);
+assert.match(pluginMain, /scheduleHighQualityDraw/);
 assert.doesNotMatch(pluginMain, /await draw\(\);\s*status\.textContent = updated\.lyxParseError \|\| sidecarStatusMessage/);
+assert.match(nativeClientSource, /renderPainter\(session, options = \{\}\)/);
+assert.match(nativeClientSource, /\{ session, \.\.\.options \}/);
 assert.match(pluginMain, /nativeCssPixels\(rendered, "width", "pixelWidth"\)/);
 assert.match(pluginMain, /nativeCssPixels\(rendered, "height", "pixelHeight"\)/);
 assert.doesNotMatch(pluginMain, /setProperty\("width", `\$\{rendered\.width\}px`, "important"\)/);
@@ -38,6 +45,7 @@ assert.doesNotMatch(pluginMain, /setProperty\("height", `\$\{rendered\.height\}p
 assert.match(sidecarMain, /font-size=\\"12\\"/);
 assert.doesNotMatch(sidecarMain, /font-size=\\"16\\"/);
 assert.match(sidecarMain, /font\.setStyle\(s\.display \? lyx::DISPLAY_STYLE : lyx::TEXT_STYLE\)/);
+assert.match(sidecarMain, /std::clamp\(integer\(p, "renderScale", 4\), 1, 4\)/);
 
 const binaryPath = resolveSidecarPath(root);
 const status = detectSidecar(root);

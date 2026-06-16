@@ -1615,7 +1615,7 @@ public:
 			trace("renderPainter: draw");
 #ifdef LYX_MATHD_USE_QT_FRONTEND
 			int const padding = 6;
-			int const render_scale = 4;
+			int const render_scale = std::clamp(integer(p, "renderScale", 4), 1, 4);
 			int const image_width = std::max(1, dim.width() + 2 * padding);
 			int const image_height = std::max(1, dim.height() + 2 * padding);
 			int const pixel_width = image_width * render_scale;

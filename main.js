@@ -185,8 +185,8 @@ class NativeMathClient {
     return this.request("session.render", { session });
   }
 
-  renderPainter(session) {
-    return this.request("session.renderPainter", { session });
+  renderPainter(session, options = {}) {
+    return this.request("session.renderPainter", { session, ...options });
   }
 
   closeSession(session) {
@@ -282,6 +282,7 @@ class NativeMathModal extends Modal {
     this.baseDir = options.baseDir;
     this.client = null;
     this.session = null;
+    this.cancelPendingDraw = null;
   }
 
   async onOpen() {
@@ -382,9 +383,25 @@ class NativeMathModal extends Modal {
     controls.append(structureControls, modeButton, saveButton, cancelButton);
 
     let currentSource = this.source;
-    const draw = async () => {
+    const liveRenderScale = 2;
+    const fullRenderScale = 4;
+    const idleRenderDelayMs = 180;
+    let drawCancelled = false;
+    let highQualityTimer = null;
+    const clearHighQualityDraw = () => {
+      if (!highQualityTimer) return;
+      clearTimeout(highQualityTimer);
+      highQualityTimer = null;
+    };
+    this.cancelPendingDraw = () => {
+      drawCancelled = true;
+      clearHighQualityDraw();
+    };
+    const draw = async (renderScale = fullRenderScale) => {
+      if (drawCancelled) return;
       if (!this.client || !this.session) return;
-      const rendered = await this.client.renderPainter(this.session);
+      const rendered = await this.client.renderPainter(this.session, { renderScale });
+      if (drawCancelled) return;
       if (typeof rendered.display === "boolean") this.display = rendered.display;
       renderNativePreview(editorSurface, rendered, currentSource);
       if (!hasNativeCursor(rendered)) appendEditorCaret(editorSurface);
@@ -394,6 +411,7 @@ class NativeMathModal extends Modal {
     let drawScheduled = false;
     let drawRunning = false;
     let drawAgain = false;
+    let pendingDrawScale = null;
     const scheduleFrame = callback => {
       if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
         window.requestAnimationFrame(callback);
@@ -401,26 +419,44 @@ class NativeMathModal extends Modal {
         setTimeout(callback, 16);
       }
     };
+    const scheduleHighQualityDraw = () => {
+      clearHighQualityDraw();
+      highQualityTimer = setTimeout(() => {
+        highQualityTimer = null;
+        updateQueue.catch(() => {}).then(() => {
+          if (!drawCancelled) scheduleDraw(fullRenderScale);
+        });
+      }, idleRenderDelayMs);
+    };
     const runScheduledDraw = async () => {
       drawScheduled = false;
+      if (drawCancelled) return;
       if (drawRunning) {
         drawAgain = true;
         return;
       }
       drawRunning = true;
+      const renderScale = pendingDrawScale || fullRenderScale;
+      pendingDrawScale = null;
       try {
-        await draw();
+        await draw(renderScale);
       } catch (error) {
         status.textContent = `Cannot render formula: ${error.message}`;
       } finally {
         drawRunning = false;
-        if (drawAgain) {
+        if (drawAgain || pendingDrawScale !== null) {
+          const nextScale = pendingDrawScale || liveRenderScale;
           drawAgain = false;
-          scheduleDraw();
+          scheduleDraw(nextScale);
+        } else if (!drawCancelled && renderScale < fullRenderScale) {
+          scheduleHighQualityDraw();
         }
       }
     };
-    const scheduleDraw = () => {
+    const scheduleDraw = (renderScale = liveRenderScale) => {
+      if (drawCancelled) return;
+      if (renderScale < fullRenderScale) clearHighQualityDraw();
+      pendingDrawScale = renderScale;
       if (drawRunning) {
         drawAgain = true;
         return;
@@ -441,7 +477,7 @@ class NativeMathModal extends Modal {
           const updated = await this.client.dispatch(this.session, action);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          scheduleDraw();
+          scheduleDraw(liveRenderScale);
           status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
@@ -457,7 +493,7 @@ class NativeMathModal extends Modal {
           const updated = await this.client.setSession(this.session, currentSource, this.display);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          scheduleDraw();
+          scheduleDraw(liveRenderScale);
           status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
@@ -594,6 +630,7 @@ class NativeMathModal extends Modal {
   }
 
   async onClose() {
+    if (this.cancelPendingDraw) this.cancelPendingDraw();
     if (this.client && this.session) {
       try {
         await this.client.closeSession(this.session);

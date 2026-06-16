@@ -163,8 +163,8 @@ class NativeMathClient {
     return this.request("session.render", { session });
   }
 
-  renderPainter(session) {
-    return this.request("session.renderPainter", { session });
+  renderPainter(session, options = {}) {
+    return this.request("session.renderPainter", { session, ...options });
   }
 
   closeSession(session) {
