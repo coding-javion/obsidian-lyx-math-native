@@ -1,28 +1,10 @@
 diff -ruN a/src/CMakeLists.txt b/src/CMakeLists.txt
---- a/src/CMakeLists.txt	2026-06-16 00:57:36
-+++ b/src/CMakeLists.txt	2026-06-16 00:57:36
-@@ -45,6 +45,16 @@
- handle_source_option("CXX" ${TOP_SRC_DIR}/src/TextMetrics.cpp -Wno-implicit-int-float-conversion)
- handle_source_option("CXX" ${TOP_SRC_DIR}/src/CursorSlice.cpp -Wno-null-dereference)
- 
-+foreach(_base BiblioInfo Buffer BufferEncodings BufferList BufferParams BufferView
-+	Changes Compare Converter Counters Cursor CursorSlice CutAndPaste
-+	DocIterator Font FontInfo FontList Format InsetIterator
-+	InsetList Language LaTeX LaTeXFeatures Layout LayoutFile LayoutModuleList LyX LyXRC
-+	MetricsInfo PDFOptions ParIterator Paragraph ParagraphMetrics ParagraphParameters
-+	Row RowPainter Statistics TexRow Text TextClass TextMetrics TocBackend TocBuilder Trans
-+	Undo VSpace factory lyxfind output_docbook output_latex output_plaintext output_xhtml
-+	xml) 
-+  handle_source_option("CXX" ${TOP_SRC_DIR}/src/${_base}.cpp -Wno-shadow)
-+endforeach()
- if (${LYX_DEBUG_SANITIZE} MATCHES "ADDRESS")
-   foreach(_base BiblioInfo Encoding LaTeX LaTeXFeatures LayoutFile Text VCBackend lyxfind Preamble)
-     handle_source_option("CXX" ${TOP_SRC_DIR}/src/${_base}.cpp -Wno-maybe-uninitialized)
-@@ -136,6 +146,25 @@
- lyx_find_info_files(LyXCMakeFiles ${TOP_MODULE_PATH}/*)
+--- a/src/CMakeLists.txt	2026-06-16 01:51:46
++++ b/src/CMakeLists.txt	2026-06-16 01:51:46
+@@ -147,6 +147,25 @@
  lyx_find_info_files(LyXCMakeFiles ${TOP_SCRIPT_PATH}/*)
  lyx_find_info_files(LyXUiFiles ${TOP_SRC_DIR}/lib/ui/*)
-+
+ 
 +set(lyx_mathd_sources ${lyx_sources})
 +list(REMOVE_ITEM lyx_mathd_sources
 +	${TOP_SRC_DIR}/src/main.cpp
@@ -41,12 +23,13 @@ diff -ruN a/src/CMakeLists.txt b/src/CMakeLists.txt
 +	INTERPROCEDURAL_OPTIMIZATION ${LYX_IPO_SUPPORTED})
 +
 +qt_use_modules(lyxcore_for_mathd Core Gui ${QtCore5CompatModule})
- 
++
  add_executable(${_lyx}
  	${WIN32_CONSOLE}
+ 	${LYX_BUILD_BUNDLE}
 diff -ruN a/src/convert/CMakeLists.txt b/src/convert/CMakeLists.txt
 --- a/src/convert/CMakeLists.txt	1970-01-01 08:00:00
-+++ b/src/convert/CMakeLists.txt	2026-06-16 00:57:36
++++ b/src/convert/CMakeLists.txt	2026-06-16 01:51:46
 @@ -0,0 +1,25 @@
 +# This file is part of LyX, the document processor.
 +# Licence details can be found in the file COPYING.
