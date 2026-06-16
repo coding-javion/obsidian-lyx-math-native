@@ -15,16 +15,19 @@
 
 3. For macOS public releases, run `npm run native:package:macos-app` with `CODESIGN_IDENTITY` set, then notarize the resulting app bundle or final zip.
 4. Run `npm run release:all`.
-5. Upload the installable zip and source tarball from `dist/` as GitHub Release assets.
+5. Upload `main.js`, `manifest.json`, `styles.css`, the installable zip, and the source tarball as GitHub Release assets.
 6. Confirm the release page includes both:
 
    ```text
-   obsidian-lyx-math-native-<version>-darwin-arm64.zip
-   obsidian-lyx-math-native-<version>-source.tar.gz
+   main.js
+   manifest.json
+   styles.css
+   lyx-math-<version>-darwin-arm64.zip
+   lyx-math-<version>-source.tar.gz
    ```
 
 7. Confirm the source tarball includes or identifies the LyX 2.5.1 source and `patches/lyx-2.5.1-mathd-cmake.patch`.
 
 Current limitation: only the current platform/architecture is packaged by these scripts. Build and upload separate release zips for each supported target.
 
-The repository also includes `.github/workflows/release.yml`. Pushing a `v*` tag builds the macOS arm64 package, creates a source tarball, uploads workflow artifacts, and publishes a GitHub Release.
+The repository also includes `.github/workflows/release.yml`. Pushing a semantic-version tag such as `0.0.1` builds the macOS arm64 package, creates a source tarball, uploads workflow artifacts, and publishes a GitHub Release.

@@ -1,7 +1,7 @@
 {
-  "id": "obsidian-lyx-math-native",
+  "id": "lyx-math",
   "name": "LyX Math Native",
-  "version": "0.1.2",
+  "version": "0.0.1",
   "minAppVersion": "1.5.0",
   "description": "Edit Obsidian formulas through a native LyX math sidecar.",
   "author": "Local",

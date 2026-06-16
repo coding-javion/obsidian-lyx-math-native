@@ -31,7 +31,8 @@ const lyxExcludes = [
   ".git",
   ".DS_Store",
   "autom4te.cache",
-  "obsidian-lyx-math-native"
+  "obsidian-lyx-math-native",
+  "lyx-math"
 ];
 
 function normalize(rel) {

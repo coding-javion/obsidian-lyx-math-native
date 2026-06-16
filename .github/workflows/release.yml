@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "*.*.*"
 
 permissions:
   contents: write
@@ -96,8 +96,11 @@ jobs:
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: obsidian-lyx-math-native-macos-arm64
+          name: lyx-math-macos-arm64
           path: |
+            main.js
+            manifest.json
+            styles.css
             dist/*.zip
             dist/*.tar.gz
 
@@ -106,6 +109,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.tar.gz \
+          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css dist/*.zip dist/*.tar.gz \
             --title "$GITHUB_REF_NAME" \
             --notes "Automated macOS arm64 release for $GITHUB_REF_NAME."

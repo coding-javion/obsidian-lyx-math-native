@@ -34,7 +34,7 @@ Obsidian 移动端不支持，因为插件需要启动本地原生进程。
 从 GitHub Releases 下载与你的平台匹配的 release zip。当前 macOS arm64 构建的文件名类似：
 
 ```text
-obsidian-lyx-math-native-0.1.2-darwin-arm64.zip
+lyx-math-0.0.1-darwin-arm64.zip
 ```
 
 手动安装步骤：
@@ -48,7 +48,7 @@ obsidian-lyx-math-native-0.1.2-darwin-arm64.zip
 2. 新建插件目录：
 
    ```text
-   obsidian-lyx-math-native
+   lyx-math
    ```
 
 3. 把 zip 内容解压到这个目录中。目录内应该能看到 `manifest.json`、`main.js`、`styles.css`、`bin/` 和 `support/`。
@@ -144,8 +144,8 @@ npm test
 仓库内已经包含 GitHub Actions workflow：`.github/workflows/release.yml`。
 
 - 手动运行 `workflow_dispatch` 会构建并上传 workflow artifacts。
-- 推送 `v0.1.2` 这类 tag 时，会构建 macOS arm64 release 并发布到 GitHub Release。
-- 每个 release 应同时包含可安装插件 zip 和对应源码 tarball。
+- 推送 `0.0.1` 这类 tag 时，会构建 macOS arm64 release 并发布到 GitHub Release。
+- 每个 release 应同时包含 `main.js`、`manifest.json`、`styles.css`、可安装插件 zip 和对应源码 tarball。
 
 本地生成 macOS arm64 release：
 
@@ -161,8 +161,11 @@ npm run release:all
 发布时上传 `dist/` 下生成的文件作为 GitHub Release assets：
 
 ```text
-obsidian-lyx-math-native-0.1.2-darwin-arm64.zip
-obsidian-lyx-math-native-0.1.2-source.tar.gz
+main.js
+manifest.json
+styles.css
+lyx-math-0.0.1-darwin-arm64.zip
+lyx-math-0.0.1-source.tar.gz
 ```
 
 用户安装 zip。source tarball 用于 GPL 对应源码和开发者复现构建。

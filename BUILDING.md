@@ -68,7 +68,7 @@ The zip contains the installable Obsidian plugin runtime. The repository itself 
 npm run release:source
 ```
 
-This creates `dist/obsidian-lyx-math-native-<version>-source.tar.gz`. The tarball excludes generated binaries and runtime artifacts. In CI, `INCLUDE_LYX_SOURCE=1` is used so the tarball also contains the LyX source tree under `third_party/lyx`.
+This creates `dist/lyx-math-<version>-source.tar.gz`. The tarball excludes generated binaries and runtime artifacts. In CI, `INCLUDE_LYX_SOURCE=1` is used so the tarball also contains the LyX source tree under `third_party/lyx`.
 
 To generate both release artifacts locally:
 

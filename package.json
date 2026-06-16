@@ -1,6 +1,6 @@
 {
-  "name": "obsidian-lyx-math-native",
-  "version": "0.1.2",
+  "name": "lyx-math",
+  "version": "0.0.1",
   "description": "Native sidecar based LyX math editing for Obsidian.",
   "main": "main.js",
   "type": "commonjs",

@@ -45,7 +45,7 @@ Download the release zip for your platform from GitHub Releases. For the current
 macOS arm64 build, the asset name is similar to:
 
 ```text
-obsidian-lyx-math-native-0.1.2-darwin-arm64.zip
+lyx-math-0.0.1-darwin-arm64.zip
 ```
 
 Install it manually:
@@ -59,7 +59,7 @@ Install it manually:
 2. Create this directory:
 
    ```text
-   obsidian-lyx-math-native
+   lyx-math
    ```
 
 3. Extract the zip contents into that directory. The directory should contain
@@ -166,10 +166,10 @@ The repository includes a GitHub Actions workflow at
 `.github/workflows/release.yml`.
 
 - Manual `workflow_dispatch` builds upload workflow artifacts.
-- Pushing a tag like `v0.1.2` builds the macOS arm64 release and publishes a
+- Pushing a tag like `0.0.1` builds the macOS arm64 release and publishes a
   GitHub Release.
-- Each release should contain the installable plugin zip and the corresponding
-  source tarball.
+- Each release should contain `main.js`, `manifest.json`, `styles.css`, the
+  installable plugin zip, and the corresponding source tarball.
 
 For a local macOS arm64 release:
 
@@ -185,8 +185,11 @@ npm run release:all
 Upload the generated files under `dist/` as GitHub Release assets:
 
 ```text
-obsidian-lyx-math-native-0.1.2-darwin-arm64.zip
-obsidian-lyx-math-native-0.1.2-source.tar.gz
+main.js
+manifest.json
+styles.css
+lyx-math-0.0.1-darwin-arm64.zip
+lyx-math-0.0.1-source.tar.gz
 ```
 
 Users install the zip contents into their vault. The source tarball is for GPL
