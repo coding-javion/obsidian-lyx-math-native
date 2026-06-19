@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,10 +14,16 @@ const {
 const pluginEntry = require("../main.js");
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const isolatedLyxUserDir = fs.mkdtempSync(path.join(os.tmpdir(), "lyx-math-test-user-"));
+process.env.LYX_USERDIR_25x = isolatedLyxUserDir;
+process.on("exit", () => {
+  fs.rmSync(isolatedLyxUserDir, { recursive: true, force: true });
+});
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 assert.equal(manifest.id, packageJson.name);
 assert.equal(manifest.version, packageJson.version);
+assert.equal(fs.existsSync(path.join(root, "support", "lyx", "textclass.lst")), true, "packaged LyX support must include generated textclass.lst");
 
 const stylesheet = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 const pluginMain = fs.readFileSync(path.join(root, "main.js"), "utf8");
