@@ -25,21 +25,30 @@ const sidecarMain = fs.readFileSync(path.join(root, "native", "lyx-mathd", "src"
 assert.doesNotMatch(stylesheet, /font-size:\s*1\.(?:35|8)em/);
 assert.match(stylesheet, /\.lyx-native-modal\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-preview\s*\{[^}]*font-size:\s*13px !important;/);
-assert.match(stylesheet, /\.lyx-native-editor\s*\{[^}]*font-size:\s*13px !important;/);
+assert.match(stylesheet, /\.lyx-native-editor\s*\{[^}]*font-size:\s*13px !important;[^}]*overflow-x:\s*auto;/);
+assert.match(stylesheet, /\.lyx-native-editor \.lyx-native-preview-content\s*\{[^}]*max-width:\s*none !important;[^}]*white-space:\s*nowrap !important;/);
+assert.match(stylesheet, /\.lyx-native-editor \.lyx-native-painter-image\s*\{[^}]*max-width:\s*none !important;/);
 assert.match(stylesheet, /\.lyx-native-editor math\s*\{[^}]*font-size:\s*13px !important;/);
 assert.match(stylesheet, /\.lyx-native-preview math\s*\{[^}]*font-size:\s*13px !important;/);
-assert.match(stylesheet, /\.lyx-native-source\s*\{[^}]*font-size:\s*13px !important;/);
-assert.match(stylesheet, /\.lyx-native-pending-macro\s*\{/);
+assert.doesNotMatch(stylesheet, /\.lyx-native-source\s*\{/);
+assert.doesNotMatch(stylesheet, /\.lyx-native-pending-macro\s*\{/);
 assert.match(pluginMain, /function nativeCssPixels/);
 assert.match(pluginMain, /const scheduleDraw = \(renderScale = liveRenderScale\) =>/);
 assert.match(pluginMain, /const liveRenderScale = 2;/);
 assert.match(pluginMain, /const fullRenderScale = 4;/);
 assert.match(pluginMain, /renderPainter\(this\.session, \{ renderScale \}\)/);
 assert.match(pluginMain, /scheduleHighQualityDraw/);
-assert.match(pluginMain, /shouldDeferMacroRender\(action, updated\)/);
-assert.match(pluginMain, /renderPendingMacroPreview\(editorSurface, pendingMacroText\)/);
-assert.match(pluginMain, /showPendingMacro\(updated\.macroName\)/);
+assert.doesNotMatch(pluginMain, /pendingMacroText|showPendingMacro|renderPendingMacroPreview|shouldDeferMacroRender|lyx-native-pending-macro/);
+assert.match(pluginMain, /id:\s*"insert-native-lyx-matrix-row"/);
+assert.match(pluginMain, /id:\s*"insert-native-lyx-matrix-column"/);
+assert.match(pluginMain, /callback:\s*\(\) => dispatchActiveModalAction\(this, \{ type: "newline" \}\)/);
+assert.match(pluginMain, /callback:\s*\(\) => dispatchActiveModalAction\(this, \{ type: "addColumn" \}\)/);
+assert.match(pluginMain, /matrixHotkeyActionForEvent\(this\.matrixHotkeyBindings, event\)/);
+assert.match(pluginMain, /function matrixHotkeyBindingsForPlugin/);
+assert.match(pluginMain, /const wrapped = wrapFormulaForObsidian\(serialized\.latex, serialized\.display\)/);
+assert.doesNotMatch(pluginMain, /setPendingMacroAnchor|pendingMacroAnchor|lyx-native-pending-macro-positioned/);
 assert.doesNotMatch(pluginMain, /await draw\(\);\s*status\.textContent = updated\.lyxParseError \|\| sidecarStatusMessage/);
+assert.doesNotMatch(pluginMain, /fallbackSource/);
 assert.match(nativeClientSource, /renderPainter\(session, options = \{\}\)/);
 assert.match(nativeClientSource, /\{ session, \.\.\.options \}/);
 assert.match(pluginMain, /nativeCssPixels\(rendered, "width", "pixelWidth"\)/);
@@ -51,22 +60,30 @@ assert.doesNotMatch(sidecarMain, /font-size=\\"16\\"/);
 assert.match(sidecarMain, /font\.setStyle\(s\.display \? lyx::DISPLAY_STYLE : lyx::TEXT_STYLE\)/);
 assert.match(sidecarMain, /std::clamp\(integer\(p, "renderScale", 4\), 1, 4\)/);
 
-assert.equal(pluginEntry._private.shouldDeferMacroRender(
-  { type: "insertText", text: "a" },
-  { macroMode: true, macroName: "\\alpha" }
+assert.equal(pluginEntry._private.wrapFormulaForObsidian("\\alpha", false), "$\\alpha$");
+assert.equal(pluginEntry._private.wrapFormulaForObsidian("\\alpha", true), "$$\n\\alpha\n$$");
+let dispatchedActiveModalAction = null;
+assert.equal(pluginEntry._private.dispatchActiveModalAction({
+  activeModal: {
+    dispatchEditorAction(action) {
+      dispatchedActiveModalAction = action;
+      return true;
+    }
+  }
+}, { type: "addColumn" }), true);
+assert.deepEqual(dispatchedActiveModalAction, { type: "addColumn" });
+assert.equal(pluginEntry._private.hotkeyMatchesEvent(
+  { modifiers: ["Ctrl"], key: "J" },
+  { ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, key: "j" }
 ), true);
-assert.equal(pluginEntry._private.shouldDeferMacroRender(
-  { type: "insertText", text: "\\" },
-  { macroMode: true, macroName: "\\" }
-), true);
-assert.equal(pluginEntry._private.shouldDeferMacroRender(
-  { type: "insertText", text: " " },
-  { macroMode: false, macroName: "" }
+assert.equal(pluginEntry._private.hotkeyMatchesEvent(
+  { modifiers: ["Ctrl"], key: "J" },
+  { ctrlKey: true, metaKey: false, altKey: false, shiftKey: true, key: "j" }
 ), false);
-assert.equal(pluginEntry._private.shouldDeferMacroRender(
-  { type: "moveForward" },
-  { macroMode: true, macroName: "\\alpha" }
-), false);
+assert.deepEqual(pluginEntry._private.matrixHotkeyActionForEvent([
+  { binding: { modifiers: ["Ctrl"], key: "J" }, action: { type: "newline" } },
+  { binding: { modifiers: ["Ctrl"], key: "L" }, action: { type: "addColumn" } }
+], { ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, key: "l" }), { type: "addColumn" });
 
 const binaryPath = resolveSidecarPath(root);
 const status = detectSidecar(root);
@@ -136,12 +153,12 @@ try {
 
   const typed = await client.setSession(created.session, "", false);
   assert.equal(typed.latex, "");
-  let pendingMacro = null;
+  let macroState = null;
   for (const ch of "\\alpha") {
-    pendingMacro = await client.dispatch(created.session, { type: "insertText", text: ch });
+    macroState = await client.dispatch(created.session, { type: "insertText", text: ch });
   }
-  assert.equal(pendingMacro.macroMode, true);
-  assert.equal(pendingMacro.macroName, "\\alpha");
+  assert.equal(macroState.macroMode, true);
+  assert.equal(macroState.macroName, "\\alpha");
   const closedAlpha = await client.dispatch(created.session, { type: "insertText", text: " " });
   assert.equal(closedAlpha.macroMode, false);
   for (const ch of "\\beta ") {
@@ -291,6 +308,10 @@ const ranges = pluginEntry.scanMathRanges("a $x_i$ b $$\\frac{x}{y}$$ c \\$not m
 assert.deepEqual(ranges.map(r => [r.display, r.source]), [
   [false, "x_i"],
   [true, "\\frac{x}{y}"]
+]);
+const displayWithNewlines = pluginEntry.scanMathRanges("before $$\n\\alpha\n$$ after");
+assert.deepEqual(displayWithNewlines.map(r => [r.display, r.source]), [
+  [true, "\n\\alpha\n"]
 ]);
 
 console.log("Native sidecar tests passed.");

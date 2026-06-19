@@ -75,10 +75,14 @@ The plugin registers these Obsidian commands:
 - `Insert inline LyX formula`
 - `Insert display LyX formula`
 - `Edit native LyX formula at cursor`
+- `Insert matrix row in LyX formula editor`
+- `Insert matrix column in LyX formula editor`
 - `LyX native sidecar status`
 
 Inline and display formulas are intentionally inserted through different
 commands because the sidecar stores the corresponding LyX hull style.
+The matrix row and column commands are intended for Obsidian's Hotkeys
+settings while the LyX formula editor modal is open.
 
 ## Repository Layout
 

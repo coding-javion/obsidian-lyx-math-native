@@ -74,7 +74,7 @@
   line-height: 1.2 !important;
   cursor: text;
   outline: none;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .lyx-native-editor:focus {
@@ -85,7 +85,11 @@
 .lyx-native-editor .lyx-native-preview-content {
   display: inline-block !important;
   width: auto !important;
+  max-width: none !important;
   min-width: 0;
+  overflow-x: visible !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
   vertical-align: middle;
 }
 
@@ -115,6 +119,15 @@ body.theme-dark .lyx-native-painter-image {
   filter: invert(1);
 }
 
+.lyx-native-editor .lyx-native-painter {
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.lyx-native-editor .lyx-native-painter-image {
+  max-width: none !important;
+}
+
 .lyx-native-editor math {
   color: var(--text-normal);
   font-size: 13px !important;
@@ -135,20 +148,6 @@ body.theme-dark .lyx-native-painter-image {
   50% {
     opacity: 0;
   }
-}
-
-.lyx-native-pending-macro {
-  display: inline-block;
-  max-width: 100%;
-  margin-left: 4px;
-  color: var(--text-muted);
-  font-family: var(--font-monospace);
-  font-size: 13px !important;
-  line-height: 1.2 !important;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  word-break: break-all;
-  vertical-align: middle;
 }
 
 .lyx-native-preview-content {
@@ -194,21 +193,6 @@ body.theme-dark .lyx-native-painter-image {
   font-size: 13px !important;
   max-width: 100%;
   overflow-x: auto;
-}
-
-.lyx-native-source {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 120px;
-  resize: vertical;
-  font-family: var(--font-monospace);
-  font-size: 13px !important;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  word-break: break-all;
 }
 
 .lyx-native-controls {

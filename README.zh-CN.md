@@ -63,9 +63,12 @@ lyx-math-0.0.1-darwin-arm64.zip
 - `Insert inline LyX formula`
 - `Insert display LyX formula`
 - `Edit native LyX formula at cursor`
+- `Insert matrix row in LyX formula editor`
+- `Insert matrix column in LyX formula editor`
 - `LyX native sidecar status`
 
 行内公式和行间公式故意分成两个插入命令，因为 sidecar 会保存对应的 LyX hull 样式。
+矩阵行/列命令用于在 LyX 公式编辑窗口打开时，通过 Obsidian Hotkeys 设置绑定快捷键。
 
 ## 目录结构
 

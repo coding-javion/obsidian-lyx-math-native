@@ -247,22 +247,35 @@ function createNativeMathClient(options) {
 class LyxMathNativePlugin extends Plugin {
   async onload() {
     this.baseDir = getPluginBaseDir(this);
+    this.activeModal = null;
     this.addCommand({
       id: "edit-native-lyx-math-at-cursor",
       name: "Edit native LyX formula at cursor",
-      editorCallback: editor => openFormulaAtCursor(this.app, editor, this.baseDir)
+      editorCallback: editor => openFormulaAtCursor(this, editor)
     });
 
     this.addCommand({
       id: "insert-native-lyx-math-formula",
       name: "Insert inline LyX formula",
-      editorCallback: editor => insertFormulaAtCursor(this.app, editor, this.baseDir, false)
+      editorCallback: editor => insertFormulaAtCursor(this, editor, false)
     });
 
     this.addCommand({
       id: "insert-native-lyx-display-math-formula",
       name: "Insert display LyX formula",
-      editorCallback: editor => insertFormulaAtCursor(this.app, editor, this.baseDir, true)
+      editorCallback: editor => insertFormulaAtCursor(this, editor, true)
+    });
+
+    this.addCommand({
+      id: "insert-native-lyx-matrix-row",
+      name: "Insert matrix row in LyX formula editor",
+      callback: () => dispatchActiveModalAction(this, { type: "newline" })
+    });
+
+    this.addCommand({
+      id: "insert-native-lyx-matrix-column",
+      name: "Insert matrix column in LyX formula editor",
+      callback: () => dispatchActiveModalAction(this, { type: "addColumn" })
     });
 
     this.addCommand({
@@ -280,9 +293,12 @@ class NativeMathModal extends Modal {
     this.display = options.display;
     this.onSubmit = options.onSubmit;
     this.baseDir = options.baseDir;
+    this.plugin = options.plugin || null;
+    this.matrixHotkeyBindings = matrixHotkeyBindingsForPlugin(this.plugin);
     this.client = null;
     this.session = null;
     this.cancelPendingDraw = null;
+    this.dispatchEditorAction = null;
   }
 
   async onOpen() {
@@ -357,7 +373,7 @@ class NativeMathModal extends Modal {
     insertStructureButton.textContent = "Insert";
     const lineBreakButton = document.createElement("button");
     lineBreakButton.type = "button";
-    lineBreakButton.textContent = "Line";
+    lineBreakButton.textContent = "Row";
     const addColumnButton = document.createElement("button");
     addColumnButton.type = "button";
     addColumnButton.textContent = "Col";
@@ -388,7 +404,6 @@ class NativeMathModal extends Modal {
     const idleRenderDelayMs = 180;
     let drawCancelled = false;
     let highQualityTimer = null;
-    let pendingMacroText = "";
     const clearHighQualityDraw = () => {
       if (!highQualityTimer) return;
       clearTimeout(highQualityTimer);
@@ -404,10 +419,8 @@ class NativeMathModal extends Modal {
       const rendered = await this.client.renderPainter(this.session, { renderScale });
       if (drawCancelled) return;
       if (typeof rendered.display === "boolean") this.display = rendered.display;
-      renderNativePreview(editorSurface, rendered, currentSource);
-      if (pendingMacroText) {
-        renderPendingMacroPreview(editorSurface, pendingMacroText);
-      } else if (!hasNativeCursor(rendered)) {
+      renderNativePreview(editorSurface, rendered);
+      if (!hasNativeCursor(rendered)) {
         appendEditorCaret(editorSurface);
       }
       modeButton.textContent = this.display ? "Display $$" : "Inline $";
@@ -472,10 +485,6 @@ class NativeMathModal extends Modal {
         runScheduledDraw();
       });
     };
-    const showPendingMacro = text => {
-      pendingMacroText = text || "";
-      renderPendingMacroPreview(editorSurface, pendingMacroText);
-    };
 
     let updateQueue = Promise.resolve();
     const updateFromNative = action => {
@@ -486,13 +495,7 @@ class NativeMathModal extends Modal {
           const updated = await this.client.dispatch(this.session, action);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
-          if (shouldDeferMacroRender(action, updated)) {
-            clearHighQualityDraw();
-            showPendingMacro(updated.macroName);
-          } else {
-            showPendingMacro("");
-            scheduleDraw(liveRenderScale);
-          }
+          scheduleDraw(liveRenderScale);
           status.textContent = updated.lyxParseError || healthyStatusText;
         })
         .catch(error => {
@@ -505,7 +508,6 @@ class NativeMathModal extends Modal {
         .catch(() => {})
         .then(async () => {
           if (!this.client || !this.session) return;
-          showPendingMacro("");
           const updated = await this.client.setSession(this.session, currentSource, this.display);
           if (typeof updated.source === "string") currentSource = updated.source;
           if (typeof updated.display === "boolean") this.display = updated.display;
@@ -517,6 +519,12 @@ class NativeMathModal extends Modal {
         });
       return updateQueue;
     };
+    this.dispatchEditorAction = action => {
+      updateFromNative(action);
+      editorSurface.focus();
+      return true;
+    };
+    if (this.plugin) this.plugin.activeModal = this;
 
     try {
       this.client = createNativeMathClient({ baseDir: this.baseDir });
@@ -543,6 +551,13 @@ class NativeMathModal extends Modal {
       if (event.key === "Escape") {
         event.preventDefault();
         this.close();
+        return;
+      }
+      const hotkeyAction = matrixHotkeyActionForEvent(this.matrixHotkeyBindings, event);
+      if (hotkeyAction) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.dispatchEditorAction(hotkeyAction);
         return;
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -617,13 +632,11 @@ class NativeMathModal extends Modal {
     });
 
     lineBreakButton.addEventListener("click", () => {
-      updateFromNative({ type: "newline" });
-      editorSurface.focus();
+      this.dispatchEditorAction({ type: "newline" });
     });
 
     addColumnButton.addEventListener("click", () => {
-      updateFromNative({ type: "addColumn" });
-      editorSurface.focus();
+      this.dispatchEditorAction({ type: "addColumn" });
     });
 
     saveButton.addEventListener("click", async () => {
@@ -631,7 +644,7 @@ class NativeMathModal extends Modal {
       try {
         await updateQueue.catch(() => {});
         const serialized = await this.client.serialize(this.session);
-        const wrapped = serialized.display ? `$$${serialized.latex}$$` : `$${serialized.latex}$`;
+        const wrapped = wrapFormulaForObsidian(serialized.latex, serialized.display);
         this.onSubmit(wrapped);
         this.close();
       } catch (error) {
@@ -646,6 +659,8 @@ class NativeMathModal extends Modal {
   }
 
   async onClose() {
+    if (this.plugin && this.plugin.activeModal === this) this.plugin.activeModal = null;
+    this.dispatchEditorAction = null;
     if (this.cancelPendingDraw) this.cancelPendingDraw();
     if (this.client && this.session) {
       try {
@@ -703,30 +718,31 @@ function sidecarStatusMessage(baseDir = __dirname) {
   return `lyx-mathd unavailable at ${status.binaryPath}: ${status.reason}`;
 }
 
-function openFormulaAtCursor(app, editor, baseDir) {
+function openFormulaAtCursor(plugin, editor) {
   const context = getFormulaContext(editor);
   if (!context) {
     new Notice("No $...$ or $$...$$ formula at the cursor.");
     return;
   }
-  openFormulaModal(app, editor, context, baseDir);
+  openFormulaModal(plugin, editor, context);
 }
 
-function insertFormulaAtCursor(app, editor, baseDir, display = false) {
+function insertFormulaAtCursor(plugin, editor, display = false) {
   const offset = editorPositionToOffset(editor, editor.getCursor());
-  openFormulaModal(app, editor, {
+  openFormulaModal(plugin, editor, {
     from: offset,
     to: offset,
     display,
     source: ""
-  }, baseDir);
+  });
 }
 
-function openFormulaModal(app, editor, context, baseDir) {
-  new NativeMathModal(app, {
+function openFormulaModal(plugin, editor, context) {
+  new NativeMathModal(plugin.app, {
     source: context.source,
     display: context.display,
-    baseDir,
+    baseDir: plugin.baseDir,
+    plugin,
     onSubmit: replacement => {
       editor.replaceRange(
         replacement,
@@ -736,6 +752,71 @@ function openFormulaModal(app, editor, context, baseDir) {
       editor.setCursor(editorOffsetToPosition(editor, context.from + replacement.length));
     }
   }).open();
+}
+
+function dispatchActiveModalAction(plugin, action) {
+  const modal = plugin && plugin.activeModal;
+  if (modal && typeof modal.dispatchEditorAction === "function") {
+    return modal.dispatchEditorAction(action);
+  }
+  new Notice("No active LyX formula editor.");
+  return false;
+}
+
+function wrapFormulaForObsidian(latex, display) {
+  const source = typeof latex === "string" ? latex : "";
+  return display ? `$$\n${source}\n$$` : `$${source}$`;
+}
+
+function matrixHotkeyBindingsForPlugin(plugin) {
+  const pluginId = plugin && plugin.manifest && plugin.manifest.id || "lyx-math";
+  const hotkeys = readObsidianHotkeys(plugin);
+  return [
+    [`${pluginId}:insert-native-lyx-matrix-row`, { type: "newline" }],
+    [`${pluginId}:insert-native-lyx-matrix-column`, { type: "addColumn" }]
+  ].flatMap(([commandId, action]) => {
+    const bindings = Array.isArray(hotkeys[commandId]) ? hotkeys[commandId] : [];
+    return bindings.map(binding => ({ binding, action }));
+  });
+}
+
+function readObsidianHotkeys(plugin) {
+  const adapter = plugin && plugin.app && plugin.app.vault && plugin.app.vault.adapter;
+  if (!adapter || typeof adapter.getBasePath !== "function") return {};
+  try {
+    const configDir = plugin.app.vault.configDir || ".obsidian";
+    const hotkeysPath = path.join(adapter.getBasePath(), configDir, "hotkeys.json");
+    return JSON.parse(fs.readFileSync(hotkeysPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function matrixHotkeyActionForEvent(bindings, event) {
+  if (!Array.isArray(bindings) || !event) return null;
+  const match = bindings.find(item => hotkeyMatchesEvent(item.binding, event));
+  return match ? { ...match.action } : null;
+}
+
+function hotkeyMatchesEvent(hotkey, event) {
+  if (!hotkey || !event || event.isComposing) return false;
+  if (normalizeHotkeyKey(hotkey.key) !== normalizeHotkeyKey(event.key)) return false;
+  const modifiers = Array.isArray(hotkey.modifiers) ? hotkey.modifiers : [];
+  const wantsMod = modifiers.includes("Mod");
+  const wantsCtrl = modifiers.includes("Ctrl") || wantsMod && process.platform !== "darwin";
+  const wantsMeta = modifiers.includes("Meta") || wantsMod && process.platform === "darwin";
+  const wantsAlt = modifiers.includes("Alt");
+  const wantsShift = modifiers.includes("Shift");
+  return Boolean(event.ctrlKey) === wantsCtrl
+    && Boolean(event.metaKey) === wantsMeta
+    && Boolean(event.altKey) === wantsAlt
+    && Boolean(event.shiftKey) === wantsShift;
+}
+
+function normalizeHotkeyKey(key) {
+  if (key === " ") return "Space";
+  const value = String(key || "");
+  return value.length === 1 ? value.toUpperCase() : value;
 }
 
 function getFormulaContext(editor) {
@@ -862,7 +943,7 @@ function applyFixedTextSize(element, sizePx = 13, lineHeight = "1.2") {
   element.style.setProperty("line-height", lineHeight, "important");
 }
 
-function renderNativePreview(preview, rendered, fallbackSource) {
+function renderNativePreview(preview, rendered) {
   clearElement(preview);
   applyFixedTextSize(preview, 13, "1.2");
   const content = document.createElement("div");
@@ -924,13 +1005,6 @@ function renderNativePreview(preview, rendered, fallbackSource) {
       applyFixedTextSize(node, 13, node.tagName && node.tagName.toLowerCase() === "code" ? "1.45" : "1.2");
     }
   }
-  if (!content.textContent && fallbackSource) {
-    const code = document.createElement("code");
-    applyWrappingBox(code);
-    applyFixedTextSize(code, 13, "1.45");
-    code.textContent = fallbackSource;
-    content.appendChild(code);
-  }
   preview.appendChild(content);
 }
 
@@ -939,32 +1013,6 @@ function appendEditorCaret(editorSurface) {
   caret.className = "lyx-native-caret";
   caret.setAttribute("aria-hidden", "true");
   editorSurface.appendChild(caret);
-}
-
-function isAlphabeticPendingMacro(updated) {
-  return Boolean(updated
-    && updated.macroMode === true
-    && typeof updated.macroName === "string"
-    && /^\\[A-Za-z]*$/.test(updated.macroName));
-}
-
-function shouldDeferMacroRender(action, updated) {
-  return Boolean(action
-    && (action.type === "insertText" || action.type === "backspace" || action.type === "delete")
-    && isAlphabeticPendingMacro(updated));
-}
-
-function renderPendingMacroPreview(editorSurface, macroName) {
-  if (!editorSurface || typeof editorSurface.querySelectorAll !== "function") return;
-  for (const node of editorSurface.querySelectorAll(".lyx-native-pending-macro")) {
-    node.remove();
-  }
-  if (!macroName) return;
-  const pending = document.createElement("span");
-  pending.className = "lyx-native-pending-macro";
-  pending.textContent = macroName;
-  pending.setAttribute("aria-label", `Pending LyX command ${macroName}`);
-  editorSurface.appendChild(pending);
 }
 
 function hasNativeCursor(rendered) {
@@ -982,9 +1030,12 @@ module.exports._private = {
   applyWrappingBox,
   appendEditorCaret,
   hasNativeCursor,
-  shouldDeferMacroRender,
+  dispatchActiveModalAction,
+  hotkeyMatchesEvent,
+  matrixHotkeyActionForEvent,
+  matrixHotkeyBindingsForPlugin,
   getPluginBaseDir,
   renderNativePreview,
-  renderPendingMacroPreview,
-  sidecarStatusMessage
+  sidecarStatusMessage,
+  wrapFormulaForObsidian
 };
